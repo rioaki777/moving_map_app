@@ -1,0 +1,37 @@
+<!-- app/views/locations/index.html.erb -->
+
+<div class="mx-auto w-4/5">
+  <h1 class="text-xl font-bold mb-4">位置情報マップ</h1>
+
+  <div class="mb-4">
+    <span class="font-semibold">視聴時間:</span>
+    <span id="seconds-viewed" class="text-blue-600 font-bold">0 秒</span>
+  </div>
+
+  <div id="map" class="min-h-[500px] rounded-2xl shadow-md"></div>
+</div>
+
+<script>
+  let L = window.L;
+  const locations = <%= raw @locations.to_json(only: [:lat, :lng, :recorded_at]) %>;
+
+  const map = L.map('map').setView([locations[0].lat, locations[0].lng], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+  const marker = L.marker([locations[0].lat, locations[0].lng]).addTo(map);
+  console.log(marker);
+  console.log(locations);
+
+  let i = 0;
+  function moveMarker() {
+    if (i >= locations.length) i = 1;
+
+    // recorded_atを無視して0.1秒ごとに位置更新
+    const loc = locations[i];
+    marker.setLatLng([loc.lat, loc.lng]);
+    i++;
+    
+    setTimeout(moveMarker, 100);
+  }
+  moveMarker();
+</script>

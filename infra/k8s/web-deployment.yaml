@@ -1,0 +1,52 @@
+# ===============================
+# Deployment 定義
+# ===============================
+apiVersion: apps/v1           # Deployment リソースを apps/v1 API バージョンで利用
+kind: Deployment              # 作成するリソースの種類
+metadata:
+  name: rails-web             # Deployment の名前（クラスタ内で一意）
+
+spec:
+  replicas: 1                 # 起動する Pod の数
+  selector:
+    matchLabels:              # この Deployment が管理する Pod を特定するラベル
+      app: rails-web          # Pod のラベルが app=rails-web のものを対象にする
+
+  template:                   # Pod のテンプレート定義（Pod をどう作るか）
+    metadata:
+      labels:
+        app: rails-web        # Pod に付与するラベル（selector と一致している必要あり）
+
+    spec:                     # Pod 内の設定
+      containers:             # Pod に含めるコンテナ一覧
+        - name: rails-web     # コンテナ名
+          image: moving_map_app:latest   # 使用する Docker イメージ
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000      # コンテナ内で公開するポート（Rails の 3000 番）
+          env:
+            - name: DATABASE_URL
+              value: "postgres://postgres:password@postgres:5432/moving_map_app_development"
+            - name: REDIS_URL
+              value: "redis://redis:6379/1"
+
+---
+
+# ===============================
+# Service 定義
+# ===============================
+apiVersion: v1                # Service リソースは v1 API で利用
+kind: Service                 # 作成するリソースの種類は Service
+metadata:
+  name: rails-web             # Service の名前（クラスタ内で一意）
+
+spec:
+  selector:                   # 転送先にする Pod をラベルで特定
+    app: rails-web            # app=rails-web の Pod にトラフィックを送る
+  ports:
+    - port: 3000              # Service が待ち受けるポート番号
+      targetPort: 3000        # Pod 内コンテナのポート番号（Rails が listen しているポート）
+
+  type: NodePort              # Service の種類
+                              # NodePort は外部からアクセス可能
+                              # 各 Node に 30000-32767 のポートが割り当てられる

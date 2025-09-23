@@ -1,0 +1,58 @@
+# ===============================
+# Deployment 定義 (PostgreSQL)
+# ===============================
+apiVersion: apps/v1              # Deployment リソースは apps/v1 API バージョンを使用
+kind: Deployment                 # 作成するリソースの種類
+metadata:
+  name: postgres                 # Deployment の名前（クラスタ内で一意）
+
+spec:
+  replicas: 1                    # 起動する Pod の数
+  selector:
+    matchLabels:                 # この Deployment が管理する Pod を特定するラベル
+      app: postgres              # Pod のラベルが app=postgres のものを対象にする
+
+  template:                      # Pod のテンプレート定義（どういう Pod を作るか）
+    metadata:
+      labels:
+        app: postgres            # Pod に付与するラベル（selector と一致している必要あり）
+
+    spec:                        # Pod 内の詳細設定
+      containers:                # Pod に含めるコンテナの定義
+        - name: postgres         # コンテナ名
+          image: postgres:15     # 使用する Docker イメージ
+          ports:
+            - containerPort: 5432  # コンテナが待ち受けるポート番号
+
+          env:                   # 環境変数で DB 初期設定
+            - name: POSTGRES_USER
+              value: "postgres"  # デフォルトユーザー名
+            - name: POSTGRES_PASSWORD
+              value: "password"  # デフォルトユーザーのパスワード
+
+          volumeMounts:          # コンテナ内にボリュームをマウント
+            - name: postgres-storage   # 下で定義した volumes の "postgres-storage" を使う
+              mountPath: /var/lib/postgresql/data
+              # PostgreSQL がデータを保存するディレクトリ
+
+      volumes:                   # Pod 全体で使うボリュームを定義
+        - name: postgres-storage
+          emptyDir: {}           # demo用に一時的なストレージ
+                                 # 本番では PersistentVolumeClaim (PVC) 等を使う
+
+---
+
+# ===============================
+# Service 定義 (PostgreSQL)
+# ===============================
+apiVersion: v1                   # Service リソースは v1 API を使用
+kind: Service                    # 作成するリソースの種類は Service
+metadata:
+  name: postgres                 # Service の名前（クラスタ内で一意）
+
+spec:
+  selector:                      # この Service が転送する先の Pod をラベルで特定
+    app: postgres                # app=postgres の Pod へトラフィックを送る
+
+  ports:
+    - port: 5432

@@ -1,0 +1,43 @@
+# ===============================
+# Deployment 定義 (Redis)
+# ===============================
+apiVersion: apps/v1              # Deployment リソースは apps/v1 API バージョンを使用
+kind: Deployment                 # 作成するリソースの種類
+metadata:
+  name: redis                    # Deployment の名前（クラスタ内で一意）
+
+spec:
+  replicas: 1                    # 起動する Pod の数
+  selector:
+    matchLabels:                 # この Deployment が管理する Pod を特定するラベル
+      app: redis                 # Pod のラベルが app=redis のものを対象にする
+
+  template:                      # Pod のテンプレート定義（どういう Pod を作るか）
+    metadata:
+      labels:
+        app: redis               # Pod に付与するラベル（selector と一致している必要あり）
+
+    spec:                        # Pod 内の詳細設定
+      containers:                # Pod に含めるコンテナの定義
+        - name: redis            # コンテナ名
+          image: redis:7         # 使用する Docker イメージ（公式の Redis v7）
+          ports:
+            - containerPort: 6379  # コンテナが待ち受けるポート番号（Redis の標準ポート）
+
+---
+
+# ===============================
+# Service 定義 (Redis)
+# ===============================
+apiVersion: v1                   # Service リソースは v1 API を使用
+kind: Service                    # 作成するリソースの種類は Service
+metadata:
+  name: redis                    # Service の名前（クラスタ内で一意）
+
+spec:
+  selector:                      # この Service が転送する先の Pod をラベルで特定
+    app: redis                   # app=redis の Pod へトラフィックを送る
+
+  ports:
+    - port: 6379                 # Service が待ち受けるポート番号
+      targetPort: 6379           # Pod 内コンテナのポート番号（Redis の標準ポート）
